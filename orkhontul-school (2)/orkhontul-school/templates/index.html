@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Орхонтуул ЕБС — Нүүр хуудас{% endblock %}
+{% block content %}
+
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="hero-label">БҮРЭН ДУНД БОЛОВСРОЛЫН</div>
+    <h1 class="hero-title">ДААЛГАВРЫН <br><span class="accent">САН</span></h1>
+    <p class="hero-desc">1–12-р ангийн бүх хичээлийн даалгавар. Улсын болон Анги дэвших шалгалтыг блупринтийн дагуу автоматаар үүсгэнэ.</p>
+    <div class="hero-actions">
+      <a href="/questions" class="btn btn-primary">Даалгавар хайх</a>
+      <a href="/blueprint" class="btn btn-outline">Шалгалт үүсгэх</a>
+    </div>
+  </div>
+  <div class="hero-stats">
+    <div class="stat-card" id="stat-q"><span class="stat-num" data-target="4820">0</span><span class="stat-label">Нийт даалгавар</span></div>
+    <div class="stat-card"><span class="stat-num" data-target="12">0</span><span class="stat-label">Анги</span></div>
+    <div class="stat-card"><span class="stat-num" data-target="10">0</span><span class="stat-label">Хичээл</span></div>
+    <div class="stat-card"><span class="stat-num" data-target="36">0</span><span class="stat-label">Блупринт</span></div>
+  </div>
+</section>
+
+<section class="grade-nav">
+  <h2 class="section-title">Ангиар хайх</h2>
+  <div class="grade-groups">
+    {% set groups = [("Бага боловсрол", range(1,6), "1-5"), ("Дунд боловсрол", range(6,10), "6-9"), ("Ахлах боловсрол", range(10,13), "10-12")] %}
+    {% for group_name, grades, key in groups %}
+    <div class="grade-group">
+      <h3 class="group-label">{{ group_name }}</h3>
+      <div class="grade-pills">
+        {% for g in grades %}
+        <a href="/questions?grade={{ g }}" class="grade-pill">{{ g }}-р анги</a>
+        {% endfor %}
+      </div>
+      <div class="subject-list">
+        {% for subj in subjects[key] %}
+        <span class="subj-tag">{{ subj }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="exam-types">
+  <h2 class="section-title">Шалгалтын төрөл</h2>
+  <div class="exam-cards">
+    {% for et in exam_types %}
+    <div class="exam-card">
+      <div class="exam-icon">{% if loop.index == 1 %}🏆{% elif loop.index == 2 %}📋{% else %}📝{% endif %}</div>
+      <h3>{{ et }}</h3>
+      <p>{% if loop.index == 1 %}Улсын журмын шалгалт. Блупринтийн дагуу 40 даалгавар, 90 минут.{% elif loop.index == 2 %}Дараагийн анги руу дэвших шалгалт. 25 даалгавар, 60 минут.{% else %}Хичээлийн явцын дотоод үнэлгээний шалгалт. Захирамжийн дагуу.{% endif %}</p>
+      <a href="/blueprint?type={{ et }}" class="btn btn-sm">Үүсгэх →</a>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+{% endblock %}
+{% block scripts %}
+<script>
+// Counter animation
+document.querySelectorAll('.stat-num[data-target]').forEach(el => {
+  const target = +el.dataset.target;
+  let current = 0;
+  const step = Math.ceil(target / 60);
+  const timer = setInterval(() => {
+    current = Math.min(current + step, target);
+    el.textContent = current.toLocaleString();
+    if (current >= target) clearInterval(timer);
+  }, 25);
+});
+</script>
+{% endblock %}
