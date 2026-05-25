@@ -89,8 +89,9 @@
 const EXAM_TYPES = {{ exam_types | tojson }};
 const GRADE_MAP  = {{ grade_exam_map | tojson }};
 
-let currentExamId = null;
-let currentGrade  = null;
+let currentExamId   = null;
+let currentGrade    = null;
+let currentExamData = null;  // PDF-д ашиглах
 
 // URL параметрээс анхны утга авах
 const urlParams = new URLSearchParams(location.search);
@@ -110,7 +111,6 @@ function selectExamType(eid) {
   const et = EXAM_TYPES[eid];
   const bp = et.blueprint;
 
-  // Тухайн шалгалтын ангиудыг тодруулах
   document.querySelectorAll('.grade-btn').forEach(b => {
     b.classList.remove('active','dimmed');
   });
@@ -124,14 +124,11 @@ function selectExamType(eid) {
     }
   }
 
-  // Анги сонгох — тухайн шалгалтын эхний ангийг авах
   const defaultGrade = et.grades[0];
   selectGrade(defaultGrade);
 
-  // Блупринт автоматаар тохируулах
   setSliders(bp['Хялбар'] || 0, bp['Дунд'] || 0, bp['Хүнд'] || 0);
 
-  // Гүйцэтгэлийн үнэлгээний тэмдэглэл
   document.getElementById('guitsegdel-note').style.display =
     eid === 'guitsegdel' ? 'inline' : 'none';
 }
@@ -142,13 +139,11 @@ function selectGrade(g) {
   const btn = document.getElementById('gbtn-' + g);
   if (btn) btn.classList.add('active');
 
-  // Ангийн шалгалтын мэдээлэл харуулах
   const eid = GRADE_MAP[g] || 'guitsegdel';
   const et  = EXAM_TYPES[eid];
   const info = document.getElementById('grade-exam-info');
   info.innerHTML = `<span style="color:${et.color}">${et.icon} ${g}-р анги — ${et.name}</span>`;
 
-  // Хэрэв сонгосон exam тухайн ангид тохирохгүй бол шилжих
   if (currentExamId && !EXAM_TYPES[currentExamId].grades.includes(g)) {
     selectExamType(eid);
   }
@@ -195,6 +190,9 @@ async function generateExam() {
     body: JSON.stringify({ grade: currentGrade, subject, exam_id: currentExamId, blueprint })
   });
   const exam = await res.json();
+
+  currentExamData = exam;  // PDF-д ашиглахаар хадгална
+
   renderExam(exam);
 }
 
@@ -267,7 +265,9 @@ function renderExam(exam) {
       </div>
 
       <div class="exam-actions">
-        <button class="btn btn-primary" onclick='downloadExam(${JSON.stringify(exam).replace(/"/g,"&quot;")})'>⬇ Татаж авах</button>
+        <button class="btn btn-primary" onclick='downloadExam(${JSON.stringify(exam).replace(/"/g,"&quot;")})'>⬇ Татаж авах (.txt)</button>
+        <button class="btn btn-pdf-student" onclick="exportPDF(false)">📄 Сурагчийн PDF</button>
+        <button class="btn btn-pdf-teacher" onclick="exportPDF(true)">🔑 Багшийн PDF</button>
         <button class="btn btn-outline" onclick="generateExam()">↻ Дахин үүсгэх</button>
       </div>
     </div>
@@ -303,6 +303,86 @@ function downloadExam(exam) {
   a.click();
 }
 
+// ── PDF экспорт ───────────────────────────────────────────────────────────────
+async function exportPDF(isTeacher) {
+  if (!currentExamData) { alert('Эхлээд шалгалт үүсгэнэ үү!'); return; }
+
+  const btn = isTeacher
+    ? document.querySelector('.btn-pdf-teacher')
+    : document.querySelector('.btn-pdf-student');
+  const orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.innerHTML = '⏳ ...'; btn.disabled = true; }
+
+  try {
+    const url = '/api/export-pdf' + (isTeacher ? '?teacher=1' : '');
+    const res = await fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(currentExamData)
+    });
+
+    if (!res.ok) { alert('PDF алдаа гарлаа'); return; }
+
+    const blob   = await res.blob();
+    const link   = document.createElement('a');
+    link.href    = URL.createObjectURL(blob);
+    const suffix = isTeacher ? '_bagsh' : '_suragch';
+    link.download = `shalgalt_${currentExamData.grade}_${currentExamData.subject}${suffix}.pdf`.replace(/ /g, '_');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+
+  } catch (err) {
+    alert('PDF алдаа: ' + err.message);
+  } finally {
+    if (btn) { btn.innerHTML = orig; btn.disabled = false; }
+  }
+}
+
 updateTotal();
 </script>
+
+<style>
+.btn-pdf-student {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  box-shadow: 0 2px 8px rgba(59,130,246,.3);
+}
+.btn-pdf-student:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform: translateY(-1px);
+}
+
+.btn-pdf-teacher {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  box-shadow: 0 2px 8px rgba(34,197,94,.3);
+}
+.btn-pdf-teacher:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  transform: translateY(-1px);
+}
+
+.btn-pdf-student:disabled,
+.btn-pdf-teacher:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
+}
+</style>
 {% endblock %}
