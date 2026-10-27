@@ -20,6 +20,9 @@ function drawPicker() {
   $("pickSet").querySelectorAll("button").forEach(b => b.onclick = () => startSet(subj, b.dataset.d));
   $("pickDiff").innerHTML = ["all", "1", "2", "3"].map(d => `<button type="button" class="chip" aria-pressed="${d === diff}" data-v="${d}">${esc(d === "all" ? t("diff_all") : diffLabel(+d))}</button>`).join("");
   $("pickDiff").querySelectorAll("button").forEach(b => b.onclick = () => { diff = b.dataset.v; startSet(subj, set); });
+  $("qlRow").hidden = subj !== "M";
+  $("pickQl").innerHTML = qlangSwitch(false);
+  bindQlang($("pickQl"), () => { drawPicker(); if (list.length) { finished && cur === -1 ? showResults() : render(); } });
 }
 
 async function startSet(s, d) {

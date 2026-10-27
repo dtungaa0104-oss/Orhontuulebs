@@ -227,7 +227,8 @@ async function studentProfile(s) {
 }
 
 // ============ Давтагддаг даалгавар ============
-async function createAssignment({ classId, teacherId, title, subject, domain, count, timeLimitMin, dueAt, source, difficulty, studentIds, mode }) {
+async function createAssignment({ classId, teacherId, title, subject, domain, count, timeLimitMin, dueAt, source, difficulty, studentIds, mode, qlang }) {
+  const ql = ["both", "en"].includes(qlang) ? qlang : null;
   if (mode === "adaptive") {
     const all = await sourcePool(teacherId, subject, domain, "all", source);
     const half = Math.max(2, Math.floor((Number(count) || 12) / 2));
@@ -238,10 +239,10 @@ async function createAssignment({ classId, teacherId, title, subject, domain, co
     const easy = rest.filter(q => (q.difficulty || 2) <= 2).sort((a, b) => (a.difficulty || 2) - (b.difficulty || 2));
     const fill = (list) => list.concat(shuffle(rest.filter(q => !list.includes(q)))).slice(0, half).map(q => q.id);
     const id = uid();
-    await db.q(`INSERT INTO assignments (id,class_id,title,subject,domain,question_ids,time_limit_min,due_at,created_at,difficulty,student_ids,mode,adaptive)
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+    await db.q(`INSERT INTO assignments (id,class_id,title,subject,domain,question_ids,time_limit_min,due_at,created_at,difficulty,student_ids,mode,adaptive,qlang)
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
       [id, classId, title, subject, domain, JSON.stringify(m1.map(q => q.id)), timeLimitMin, dueAt, now(), null,
-        studentIds ? JSON.stringify(studentIds) : null, "adaptive", JSON.stringify({ hard: fill(hard), easy: fill(easy), half })]);
+        studentIds ? JSON.stringify(studentIds) : null, "adaptive", JSON.stringify({ hard: fill(hard), easy: fill(easy), half }), ql]);
     return id;
   }
   const p = await sourcePool(teacherId, subject, domain, difficulty, source);
@@ -249,10 +250,10 @@ async function createAssignment({ classId, teacherId, title, subject, domain, co
   const n = Math.max(1, Math.min(Number(count) || p.length, p.length));
   const ids = shuffle(p).slice(0, n).map(q => q.id);
   const id = uid();
-  await db.q(`INSERT INTO assignments (id,class_id,title,subject,domain,question_ids,time_limit_min,due_at,created_at,difficulty,student_ids,mode)
-              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+  await db.q(`INSERT INTO assignments (id,class_id,title,subject,domain,question_ids,time_limit_min,due_at,created_at,difficulty,student_ids,mode,qlang)
+              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
     [id, classId, title, subject, domain, JSON.stringify(ids), timeLimitMin, dueAt, now(), difficulty && difficulty !== "all" ? String(difficulty) : null,
-      studentIds ? JSON.stringify(studentIds) : null, "standard"]);
+      studentIds ? JSON.stringify(studentIds) : null, "standard", ql]);
   return id;
 }
 
@@ -446,7 +447,7 @@ app.post("/api/teacher/assignments", teacherAuth, h(async (req, res) => {
   try {
     const id = await createAssignment({ classId: c.id, teacherId: req.userId, title: String(b.title).trim(), subject: b.subject, domain,
       count: b.count, timeLimitMin: Math.max(1, Math.min(Number(b.timeLimitMin) || 10, 180)), dueAt: due,
-      source: b.source || "all", difficulty: b.difficulty || "all", mode: b.mode === "adaptive" ? "adaptive" : "standard" });
+      source: b.source || "all", difficulty: b.difficulty || "all", mode: b.mode === "adaptive" ? "adaptive" : "standard", qlang: b.qlang });
     res.json({ id });
   } catch (e) { if (e.status) return bad(res, e.status, e.message); throw e; }
 }));
@@ -738,7 +739,7 @@ app.get("/api/student/me", studentAuth, h(async (req, res) => {
     else if (a.due_at && t0 > a.due_at) status = "closed";
     assignments.push({
       id: a.id, title: a.title, subject: a.subject, domain: a.domain, questionCount: n, mode: a.mode || "standard",
-      difficulty: a.difficulty, timeLimitMin: a.time_limit_min, dueAt: a.due_at, status, targeted: !!targetIds(a),
+      difficulty: a.difficulty, qlang: a.qlang || null, timeLimitMin: a.time_limit_min, dueAt: a.due_at, status, targeted: !!targetIds(a),
       correct: t?.submitted_at ? t.correct : null, score: t?.submitted_at ? (t.score ?? scaled(t.correct, t.total)) : null
     });
   }
@@ -819,7 +820,7 @@ app.post("/api/student/assignments/:id/start", studentAuth, h(async (req, res) =
   const ids = stage === "m2" ? J(t.module2_ids, []) : J(a.question_ids, []);
   const map = await qmapFor(ids);
   res.json({
-    assignment: { id: a.id, title: a.title, subject: a.subject, domain: a.domain, timeLimitMin: a.time_limit_min, mode: a.mode || "standard" },
+    assignment: { id: a.id, title: a.title, subject: a.subject, domain: a.domain, timeLimitMin: a.time_limit_min, mode: a.mode || "standard", qlang: a.qlang || null },
     stage, startedAt: t.started_at, deadline: t.deadline, serverTime: t0,
     questions: ids.filter(id => map[id]).map(id => publicQ(map[id], false))
   });

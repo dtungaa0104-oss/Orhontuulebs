@@ -111,7 +111,11 @@ function drawTimer() {
 }
 function renderQ() {
   const q = test.questions[cur];
-  let h = questionHTML(q, cur, test.questions.length, { sel: answers[q.id] ?? null, revealed: false });
+  const forced = test.assignment.qlang;
+  $("tQl").hidden = test.assignment.subject !== "M";
+  $("tQlBox").innerHTML = forced === "en" ? qlangSwitch(true) : forced === "both" ? `<span class="pill mid">${esc(t("ql_both"))}</span>` : qlangSwitch(false);
+  if (!forced) bindQlang($("tQlBox"), renderQ);
+  let h = questionHTML(q, cur, test.questions.length, { sel: answers[q.id] ?? null, revealed: false, qlang: forced || undefined });
   h += `<div class="qnav"><button class="btn ghost" type="button" id="prev" ${cur === 0 ? "disabled" : ""}>${t("prev")}</button>
         <button class="btn" type="button" id="next" ${cur === test.questions.length - 1 ? "disabled" : ""}>${t("next")}</button></div>`;
   $("qcard").innerHTML = h;
@@ -191,7 +195,7 @@ function showResult() {
   const s = test.assignment.subject, r = result;
   if (rev >= 0) {
     const q = r.questions[rev];
-    $("rCard").innerHTML = questionHTML(q, rev, r.questions.length, { sel: r.answers[q.id] ?? null, revealed: true }) +
+    $("rCard").innerHTML = questionHTML(q, rev, r.questions.length, { sel: r.answers[q.id] ?? null, revealed: true, qlang: test.assignment.qlang === "en" ? "both" : undefined }) +
       `<div class="qnav"><button class="btn ghost" type="button" id="rp" ${rev === 0 ? "disabled" : ""}>${t("prev")}</button>
        <div class="btns"><button class="btn ghost" type="button" id="rb">${t("back_results")}</button>
        <button class="btn" type="button" id="rn" ${rev === r.questions.length - 1 ? "disabled" : ""}>${t("next")}</button></div></div>`;
@@ -229,6 +233,7 @@ function drawPr() {
   $("mTitle").textContent = daily ? t("daily_title") : t("mist_title");
   $("mLead").textContent = daily ? t("daily_lead") : t("mist_lead");
   const items = pr.items;
+  $("mQl").innerHTML = qlangSwitch(false); bindQlang($("mQl"), drawPr);
   $("mMeta").textContent = daily ? `${Math.min(pr.i + 1, items.length)} / ${items.length}` : (items.length ? `${items.length} ${t("mist_left")}` : "");
   if (daily && pr.i >= items.length) return finishDaily();
   if (!items.length) {
@@ -289,6 +294,7 @@ $("lvBack").onclick = () => loadList();
 function drawLive() {
   if (!live) { $("lvMeta").textContent = ""; $("lvCard").innerHTML = `<p class="status">${t("live_ended")}</p>`; return; }
   if (live.idx !== drawLive.lastIdx) { liveSel = null; drawLive.lastIdx = live.idx; }
+  $("lvQl").innerHTML = live.question && live.question.subject === "M" ? qlangSwitch(false) : ""; bindQlang($("lvQl"), drawLive);
   $("lvMeta").textContent = `${live.title} · ${live.idx + 1} / ${live.total}`;
   const q = live.question, mine = live.myChoice;
   if (!q) { $("lvCard").innerHTML = `<p class="small">${t("live_wait")}</p>`; return; }

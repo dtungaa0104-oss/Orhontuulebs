@@ -120,7 +120,8 @@ function drawAssigns() {
   const a = classData.assignments;
   $("asList").innerHTML = a.length ? a.map(x => {
     const tags = [x.mode === "adaptive" ? `<span class="pill mid">SAT · 2 ${t("module")}</span>` : "", x.targeted ? `<span class="pill ok">${t("followup_for")}: ${x.targetCount}</span>` : "",
-      x.difficulty ? `<span class="pill mute">${esc(diffLabel(+x.difficulty))}</span>` : ""].join(" ");
+      x.difficulty ? `<span class="pill mute">${esc(diffLabel(+x.difficulty))}</span>` : "",
+      x.qlang === "en" ? `<span class="pill mute">${esc(t("ql_en"))}</span>` : x.qlang === "both" ? `<span class="pill mute">${esc(t("ql_both"))}</span>` : ""].join(" ");
     return `<div class="arow"><div style="min-width:0"><b>${esc(x.title)}</b>
      <span class="small">${esc(subjName(x.subject))} · ${esc(domName(x.subject, x.domain))} · ${x.questionCount} ${t("questions")} · ${x.time_limit_min} ${t("minutes")}${x.due_at ? ` · ${t("due")}: ${esc(dt(x.due_at))}` : ""}</span>
      <div class="btns" style="margin-top:4px">${tags}</div></div>
@@ -144,10 +145,11 @@ function fillForms() {
   subjSelect($("recSubj")); domSelect($("recDom"), $("recSubj").value);
   selectOptions($("recDay"), [1, 2, 3, 4, 5, 6, 0].map(i => [i, weekdayName(i)]), $("recDay").value || 1);
   subjSelect($("qbSubj")); domSelect($("qbDom"), $("qbSubj").value, null, false);
+  $("asQlWrap").hidden = $("asSubj").value !== "M";
   $("asModeHint").hidden = $("asMode").value !== "adaptive";
   $("asDiffWrap").hidden = $("asMode").value === "adaptive";
 }
-$("asSubj").onchange = () => { domSelect($("asDom"), $("asSubj").value, "all"); suggestTime(); };
+$("asSubj").onchange = () => { domSelect($("asDom"), $("asSubj").value, "all"); suggestTime(); $("asQlWrap").hidden = $("asSubj").value !== "M"; };
 $("lvSubj").onchange = () => domSelect($("lvDom"), $("lvSubj").value, "all");
 $("recSubj").onchange = () => domSelect($("recDom"), $("recSubj").value, "all");
 $("qbSubj").onchange = () => domSelect($("qbDom"), $("qbSubj").value, Object.keys(META.subjects[$("qbSubj").value].domains)[0], false);
@@ -169,7 +171,7 @@ $("asForm").addEventListener("submit", async e => {
   try {
     await api("/api/teacher/assignments", { method: "POST", body: {
       classId, title: $("asTitle").value, subject: $("asSubj").value, domain: $("asDom").value, mode: $("asMode").value,
-      difficulty: $("asDiff").value, source: $("asSrc").value, count: Number($("asCount").value), timeLimitMin: Number($("asTime").value), dueAt: due } }, token);
+      difficulty: $("asDiff").value, source: $("asSrc").value, qlang: $("asQl").value, count: Number($("asCount").value), timeLimitMin: Number($("asTime").value), dueAt: due } }, token);
     $("asTitle").value = ""; st.className = "status ok"; st.textContent = "✓";
     loadClass();
   } catch (err) { st.className = "status bad"; st.textContent = err.message; }
@@ -304,12 +306,13 @@ function openProj() { $("proj").hidden = false; document.body.style.overflow = "
 function closeProj() { $("proj").hidden = true; document.body.style.overflow = ""; clearTimeout(liveTimer); projMode = null; }
 function drawProj() {
   const qs = resData.questions, q = qs[pi];
-  $("projBody").innerHTML = `<div class="btns" style="justify-content:space-between"><span class="eyebrow">${esc(resData.assignment.title)}</span><button class="btn ghost sm" type="button" id="pClose">${t("close")}</button></div>
+  $("projBody").innerHTML = `<div class="btns" style="justify-content:space-between"><span class="eyebrow">${esc(resData.assignment.title)}</span><span class="btns">${q.subject === "M" ? `<span id="pQl">${qlangSwitch(false)}</span>` : ""}<button class="btn ghost sm" type="button" id="pClose">${t("close")}</button></span></div>
     <div>${questionHTML(q, pi, qs.length, { sel: pSel, revealed: pRev })}</div>
     <div class="qnav"><button class="btn ghost" type="button" id="pPrev" ${pi === 0 ? "disabled" : ""}>${t("prev")}</button>
     <div class="btns">${pRev ? "" : `<button class="btn ghost" type="button" id="pRev">${t("reveal")}</button>`}
     <button class="btn" type="button" id="pNext" ${pi === qs.length - 1 ? "disabled" : ""}>${t("next")}</button></div></div>`;
   $("projBody").querySelectorAll(".opt").forEach(b => b.onclick = () => { pSel = +b.dataset.k; drawProj(); });
+  if ($("pQl")) bindQlang($("pQl"), drawProj);
   $("pClose").onclick = closeProj;
   $("pPrev").onclick = () => { pi--; pRev = false; pSel = null; drawProj(); };
   $("pNext").onclick = () => { pi++; pRev = false; pSel = null; drawProj(); };
@@ -341,7 +344,7 @@ async function pollLiveT() {
 }
 async function liveAction(action) { await api(`/api/teacher/live/${liveId}/action`, { method: "POST", body: { action } }, token); pollLiveT(); }
 function drawLiveT(s) {
-  const head = `<div class="btns" style="justify-content:space-between"><span class="eyebrow">${t("live_title")} · ${esc(s.title)} · ${s.idx + 1} / ${s.total}</span><button class="btn ghost sm" type="button" id="pClose">${t("close")}</button></div>`;
+  const head = `<div class="btns" style="justify-content:space-between"><span class="eyebrow">${t("live_title")} · ${esc(s.title)} · ${s.idx + 1} / ${s.total}</span><span class="btns">${s.question && s.question.subject === "M" ? `<span id="pQl">${qlangSwitch(false)}</span>` : ""}<button class="btn ghost sm" type="button" id="pClose">${t("close")}</button></span></div>`;
   const board = `<div class="panel"><h3 style="font-size:18px;margin-bottom:8px">${t("live_board")}</h3>${s.board.slice(0, 10).map((b, i) => `<div class="boardrow"><span class="mono">${i + 1}</span><span>${esc(b.name)}</span><span class="mono">${b.correct}</span></div>`).join("")}</div>`;
   if (s.state === "ended") {
     $("projBody").innerHTML = head + `<p class="status ok">${t("live_ended")}</p>` + board;
@@ -357,6 +360,7 @@ function drawLiveT(s) {
     if ($("lvNext")) $("lvNext").onclick = () => liveAction("next");
     $("lvEnd").onclick = () => liveAction("end");
   }
+  if ($("pQl")) bindQlang($("pQl"), () => drawLiveT(s));
   $("pClose").onclick = closeProj;
 }
 

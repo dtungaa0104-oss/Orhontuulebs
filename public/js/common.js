@@ -185,29 +185,81 @@ const subjName = s => META ? META.subjects[s][LANG] : s;
 const domName = (s, d) => d === "all" ? t("mixed") : (META && META.subjects[s].domains[d] ? META.subjects[s].domains[d][LANG] : d);
 
 // Асуултын текстийг сонгосон хэлээр.
-function qf(q, field) {
-  if (field === "options") return (LANG === "mn" && q.options_mn) ? q.options_mn : q.options_en;
+function qf(q, field, lang = LANG) {
+  if (field === "options") return (lang === "mn" && q.options_mn) ? q.options_mn : q.options_en;
   const mn = q[field + "_mn"], en = q[field + "_en"];
-  return LANG === "mn" ? (mn || en) : en;
+  return lang === "mn" ? (mn || en) : en;
 }
 
-// Нэг асуултын HTML. state: {sel, revealed}
+// Математикийн асуултын хэл: both = англи + монгол орчуулга, en = зөвхөн англи (шалгалтын горим), mn = зөвхөн монгол.
+let QLANG = (() => { try { const v = JSON.parse(localStorage.getItem("o16qlang")); return ["both", "en", "mn"].includes(v) ? v : "both"; } catch (e) { return "both"; } })();
+function setQlang(v) { QLANG = v; store.set("o16qlang", v); }
+function qlangSwitch(locked) {
+  if (locked) return `<span class="pill mid">${esc(t("ql_locked"))}</span>`;
+  return `<span class="seg qlseg" role="group" aria-label="${esc(t("ql_label"))}">${["both", "en", "mn"].map(v => `<button type="button" data-ql="${v}" aria-pressed="${QLANG === v}">${esc(t("ql_" + v))}</button>`).join("")}</span>`;
+}
+function bindQlang(root, onChange) {
+  root.querySelectorAll("[data-ql]").forEach(b => b.onclick = () => { setQlang(b.dataset.ql); onChange(); });
+}
+
+// Математикийн нэр томьёо: англи → монгол
+const MATH_TERMS = [
+  ["y-intercept", "y тэнхлэгтэй огтлолцох цэг"], ["x-intercept", "x тэнхлэгтэй огтлолцох цэг"], ["slope", "налалт"], ["intercept", "огтлолцох цэг"],
+  ["equation", "тэгшитгэл"], ["expression", "илэрхийлэл"], ["equivalent", "тэнцүү, адил"], ["solutions", "шийдүүд"], ["solution", "шийд"],
+  ["value", "утга"], ["function", "функц"], ["line", "шулуун"], ["points", "цэгүүд"], ["mean", "арифметик дундаж"], ["median", "медиан"],
+  ["percent", "хувь"], ["discounted", "хямдруулсан"], ["sales tax", "борлуулалтын татвар"], ["ratio", "харьцаа"], ["constant speed", "тогтмол хурд"],
+  ["speed", "хурд"], ["per", "тутамд"], ["right triangle", "тэгш өнцөгт гурвалжин"], ["hypotenuse", "гипотенуз"], ["legs", "катетууд"],
+  ["angles", "өнцгүүд"], ["angle", "өнцөг"], ["triangle", "гурвалжин"], ["area", "талбай"], ["radius", "радиус"], ["circle", "тойрог"],
+  ["circumference", "тойргийн урт"], ["volume", "эзлэхүүн"], ["rectangular", "тэгш өнцөгт"], ["cubic centimeters", "куб сантиметр"],
+  ["sum", "нийлбэр"], ["product", "үржвэр"], ["quadratic", "квадрат"], ["probability", "магадлал"], ["integer", "бүхэл тоо"],
+  ["measure", "хэмжээ"], ["at least", "дор хаяж"], ["at most", "ихдээ"], ["for every", "тутамд"], ["final price", "эцсийн үнэ"]
+];
+function mathTerms(text) {
+  const found = [], low = " " + String(text || "").toLowerCase() + " ";
+  let rest = low;
+  for (const [en, mn] of MATH_TERMS) {
+    const re = new RegExp(`(^|[^a-z])${en.replace(/[-]/g, "\\-")}([^a-z]|$)`);
+    if (re.test(rest)) { found.push([en, mn]); rest = rest.replace(new RegExp(en.replace(/[-]/g, "\\-"), "g"), " "); }
+    if (found.length >= 6) break;
+  }
+  return found;
+}
+
+// Нэг асуултын HTML. state: {sel, revealed, qlang}
 function questionHTML(q, i, total, state) {
   const sel = state.sel, rev = state.revealed;
+  const mode = q.subject === "M" ? (state.qlang || QLANG) : (LANG === "mn" ? "mn" : "en");
+  const main = mode === "mn" ? "mn" : "en";
   let h = `<div class="qmeta"><span class="eyebrow">${t("q_of")} ${i + 1} / ${total} · ${esc(subjName(q.subject))}</span><span class="btns" style="gap:6px"><span class="chip diffchip d${q.difficulty || 2}" title="${esc(t("diff"))}">${diffDots(q.difficulty)} ${esc(diffLabel(q.difficulty))}</span><span class="chip">${esc(domName(q.subject, q.domain))}</span></span></div>`;
-  const passage = qf(q, "passage");
-  if (passage) h += `<p class="passage">${esc(passage)}</p>`;
-  h += `<p class="qtext">${esc(qf(q, "q"))}</p><div class="opts">`;
-  qf(q, "options").forEach((o, k) => {
+  const both = mode === "both";
+  const passage = qf(q, "passage", main);
+  if (passage) {
+    h += `<p class="passage">${esc(passage)}</p>`;
+    if (both && q.passage_mn && q.passage_mn !== passage) h += `<p class="qtrans">${esc(q.passage_mn)}</p>`;
+  }
+  const stem = qf(q, "q", main);
+  h += `<p class="qtext" lang="${main}">${esc(stem)}</p>`;
+  if (both && q.q_mn && q.q_mn !== stem) h += `<p class="qtrans" lang="mn"><span class="qtag">МОН</span>${esc(q.q_mn)}</p>`;
+  if (q.subject === "M" && mode !== "mn") {
+    const terms = mathTerms(stem);
+    if (terms.length) h += `<div class="terms" aria-label="${esc(t("ql_terms"))}"><span class="small">${esc(t("ql_terms"))}:</span>${terms.map(([en, mn]) => `<span class="term"><b>${esc(en)}</b> ${esc(mn)}</span>`).join("")}</div>`;
+  }
+  h += `<div class="opts">`;
+  const opts = qf(q, "options", main);
+  opts.forEach((o, k) => {
     let c = "opt";
     if (rev && q.answer !== undefined) { if (k === q.answer) c += " right"; else if (k === sel) c += " wrong"; }
     else if (sel === k) c += " sel";
-    h += `<button type="button" class="${c}" data-k="${k}" ${rev ? "disabled" : ""} aria-pressed="${sel === k}"><span class="bub">${L[k]}</span><span>${esc(o)}</span></button>`;
+    const tr = both && q.options_mn && q.options_mn[k] !== o ? `<small class="otrans">${esc(q.options_mn[k])}</small>` : "";
+    h += `<button type="button" class="${c}" data-k="${k}" ${rev ? "disabled" : ""} aria-pressed="${sel === k}"><span class="bub">${L[k]}</span><span class="otext">${esc(o)}${tr}</span></button>`;
   });
   h += `</div>`;
   if (rev && q.answer !== undefined) {
     const head = sel === q.answer ? t("correct") : (sel === null || sel === undefined ? `${t("answer")}: ${L[q.answer]}.` : `${t("correct_answer")}: ${L[q.answer]}.`);
-    h += `<div class="explain"><b>${esc(head)}</b> ${esc(qf(q, "e"))}</div>`;
+    const eMain = qf(q, "e", LANG);
+    h += `<div class="explain"><b>${esc(head)}</b> ${esc(eMain)}`;
+    if (both && LANG === "mn" && q.e_en && q.e_en !== eMain) h += `<p class="qtrans" style="margin-top:8px"><span class="qtag">ENG</span>${esc(q.e_en)}</p>`;
+    h += `</div>`;
   }
   return h;
 }
@@ -254,6 +306,9 @@ Object.assign(I18N.mn, {
   live_start: "Шууд асуулт эхлүүлэх", live_lead: "Асуултыг том дэлгэцэнд гаргаж, сурагчид утсаараа хариулна.", live_answered: "хариулсан",
   live_reveal: "Хариу нээх", live_next: "Дараагийн асуулт", live_end: "Дуусгах", live_board: "Тэргүүлэгчид",
   st_detail: "Сурагчийн дэлгэрэнгүй", reset_pin: "PIN шинэчлэх", new_pin: "Шинэ PIN", pin_saved: "PIN шинэчлэгдлээ. Сурагч шинэ PIN-ээр нэвтэрнэ.",
+  ql_terms_lang: "Хэл", ql_label: "Математикийн асуултын хэл", ql_both: "Англи + Монгол", ql_en: "Зөвхөн англи", ql_mn: "Монгол", ql_terms: "Нэр томьёо",
+  ql_locked: "Шалгалтын горим: зөвхөн англи", ql_field: "Математикийн асуултын хэл", ql_any: "Сурагч өөрөө сонгоно", ql_both_f: "Англи + монгол орчуулга", ql_en_f: "Зөвхөн англи (шалгалтын горим)",
+  ql_hint: "SAT англи хэл дээр явагддаг тул англи бичвэр гол, монгол орчуулга нь туслах байдлаар гарна.",
   vocab_quiz: "Үгийн тест", vocab_cards: "Карт", vq_q: "Энэ үгийн утга аль нь вэ?", vq_score: "Оноо", vq_again: "Дахин тест"
 });
 Object.assign(I18N.en, {
@@ -284,6 +339,9 @@ Object.assign(I18N.en, {
   live_start: "Start live quiz", live_lead: "Show a question on the big screen; students answer on their phones.", live_answered: "answered",
   live_reveal: "Reveal answer", live_next: "Next question", live_end: "End", live_board: "Leaderboard",
   st_detail: "Student details", reset_pin: "Reset PIN", new_pin: "New PIN", pin_saved: "PIN updated. The student signs in with the new PIN.",
+  ql_terms_lang: "Language", ql_label: "Math question language", ql_both: "English + Mongolian", ql_en: "English only", ql_mn: "Mongolian", ql_terms: "Terms",
+  ql_locked: "Test mode: English only", ql_field: "Math question language", ql_any: "Student chooses", ql_both_f: "English + Mongolian translation", ql_en_f: "English only (test mode)",
+  ql_hint: "The SAT is in English, so the English text comes first and the Mongolian translation supports it.",
   vocab_quiz: "Word quiz", vocab_cards: "Cards", vq_q: "What does this word mean?", vq_score: "Score", vq_again: "New quiz"
 });
 

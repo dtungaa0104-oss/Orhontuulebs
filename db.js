@@ -55,6 +55,7 @@ const COLUMNS = [
   ["assignments", "student_ids", "TEXT"],
   ["assignments", "mode", "TEXT"],
   ["assignments", "adaptive", "TEXT"],
+  ["assignments", "qlang", "TEXT"],
   ["attempts", "stage", "TEXT"],
   ["attempts", "module2_ids", "TEXT"],
   ["attempts", "adaptive_path", "TEXT"],
