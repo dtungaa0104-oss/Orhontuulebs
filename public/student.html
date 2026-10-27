@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Сурагч · Оноо1600</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="top"></header>
+<main class="wrap" style="padding-block:32px">
+
+  <!-- нэвтрэх -->
+  <div id="vJoin" hidden>
+    <div class="panel narrow stack">
+      <h2 data-i18n="st_join_title"></h2>
+      <p class="small" data-i18n="st_join_lead"></p>
+      <form id="joinForm" class="stack">
+        <label class="field"><span data-i18n="class_code"></span><input id="jCode" maxlength="6" autocomplete="off" required style="text-transform:uppercase;font-family:var(--f-mono);letter-spacing:.15em"></label>
+        <label class="field"><span data-i18n="full_name"></span><input id="jName" autocomplete="name" required></label>
+        <label class="field"><span data-i18n="pin"></span><input id="jPin" inputmode="numeric" pattern="\d{4}" maxlength="4" required></label>
+        <button class="btn" type="submit" data-i18n="join"></button>
+        <p class="status" id="jStatus"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- самбар -->
+  <div id="vList" hidden>
+    <div class="banner" id="liveBanner" hidden style="justify-content:space-between">
+      <b data-i18n="live_banner"></b><button class="btn sm" type="button" id="liveJoin" data-i18n="live_join"></button>
+    </div>
+    <div class="sec-head">
+      <div><div class="eyebrow" id="lClass"></div><h2 id="lName"></h2></div>
+      <button class="btn ghost sm" type="button" id="logout" data-i18n="logout"></button>
+    </div>
+
+    <div class="panel stats" style="margin-bottom:20px">
+      <div class="stat"><span class="eyebrow" data-i18n="streak"></span><b id="sStreak">0</b><span class="small" id="sBest"></span></div>
+      <div class="stat"><span class="eyebrow" data-i18n="daily_goal"></span><b id="sToday">0</b><div class="bar"><i id="sTodayBar" style="width:0%"></i></div></div>
+      <div class="stat"><span class="eyebrow" data-i18n="mist_title"></span><b id="mistCount">0</b><span class="small" id="sMistNote"></span></div>
+      <div class="btns" style="align-self:center">
+        <button class="btn sm" type="button" id="dailyOpen" data-i18n="daily_start"></button>
+        <button class="btn ghost sm" type="button" id="mistOpen" data-i18n="mist_open"></button>
+      </div>
+    </div>
+
+    <h3 style="font-size:18px;margin-bottom:12px" data-i18n="my_assignments"></h3>
+    <div class="list" id="aList"></div>
+
+    <div class="two" style="margin-top:24px">
+      <div class="panel stack">
+        <h3 style="font-size:18px" data-i18n="progress"></h3>
+        <div id="chart"></div>
+      </div>
+      <div class="panel stack">
+        <h3 style="font-size:18px" data-i18n="goal_title"></h3>
+        <div id="goalView"></div>
+        <form id="goalForm" class="form">
+          <label class="field"><span data-i18n="goal_target"></span><input id="gTarget" type="number" min="400" max="1600" step="10" placeholder="1400"></label>
+          <label class="field"><span data-i18n="goal_date"></span><input id="gDate" type="date"></label>
+          <button class="btn ghost" type="submit" data-i18n="goal_save"></button>
+        </form>
+        <p class="status" id="gStatus"></p>
+      </div>
+    </div>
+
+    <div class="two" style="margin-top:20px">
+      <div class="panel stack"><h3 style="font-size:18px" data-i18n="badges"></h3><div id="badges"></div></div>
+      <div class="panel stack"><div><h3 style="font-size:18px" data-i18n="board_title"></h3><p class="small" data-i18n="board_lead"></p></div><div id="board"></div></div>
+    </div>
+  </div>
+
+  <!-- тест -->
+  <div id="vTest" hidden>
+    <div class="banner"><b id="tTitle"></b><span class="small" id="tMeta"></span></div>
+    <div class="exam">
+      <div class="panel" id="qcard"></div>
+      <aside class="panel side">
+        <div><div class="eyebrow" data-i18n="time_left"></div><div class="timer" id="timer">0:00</div></div>
+        <div><div class="eyebrow" style="margin-bottom:8px" data-i18n="answer_sheet"></div><div class="sheetgrid" id="sheet"></div></div>
+        <button class="btn" id="submit" type="button" data-i18n="finish"></button>
+        <p class="status" id="sStatus"></p>
+        <p class="small" id="calcNote"><span data-i18n="desmos_note"></span> <a href="https://www.desmos.com/calculator" target="_blank" rel="noopener" data-i18n="desmos_open"></a></p>
+      </aside>
+    </div>
+  </div>
+
+  <div id="vResult" hidden><div class="panel" id="rCard"></div></div>
+
+  <!-- алдааны дэвтэр / өдрийн дасгал -->
+  <div id="vMist" hidden>
+    <div class="sec-head">
+      <div><div class="eyebrow" id="mMeta"></div><h2 id="mTitle"></h2><p class="small" id="mLead"></p></div>
+      <button class="btn ghost sm" type="button" id="mBack" data-i18n="back_list"></button>
+    </div>
+    <div class="panel" id="mCard"></div>
+  </div>
+
+  <!-- шууд асуулт -->
+  <div id="vLive" hidden>
+    <div class="sec-head">
+      <div><div class="eyebrow" id="lvMeta"></div><h2 data-i18n="live_title"></h2></div>
+      <button class="btn ghost sm" type="button" id="lvBack" data-i18n="back_list"></button>
+    </div>
+    <div class="panel" id="lvCard"></div>
+  </div>
+</main>
+<div class="offline" id="offline" hidden data-i18n="offline"></div>
+<footer><div class="wrap" data-i18n="footer"></div></footer>
+<script src="/js/common.js"></script>
+<script src="/js/student.js"></script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Багш · Оноо1600</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="top"></header>
+<main class="wrap" style="padding-block:32px">
+  <p class="banner" id="demoNote" hidden data-i18n="demo_db"></p>
+
+  <!-- нэвтрэх -->
+  <div id="vAuth" hidden>
+    <div class="panel narrow stack">
+      <div class="tabs">
+        <button class="chip" type="button" id="tabLogin" aria-pressed="true" data-i18n="t_login"></button>
+        <button class="chip" type="button" id="tabReg" aria-pressed="false" data-i18n="t_register"></button>
+        <button class="chip" type="button" id="tabReset" aria-pressed="false" data-i18n="t_forgot"></button>
+      </div>
+      <form id="authForm" class="stack">
+        <label class="field" id="fName" hidden><span data-i18n="your_name"></span><input id="aName" autocomplete="name"></label>
+        <label class="field"><span data-i18n="email"></span><input id="aEmail" type="email" autocomplete="email" required></label>
+        <label class="field" id="fRec" hidden><span data-i18n="recovery_code"></span><input id="aRec" autocomplete="off" style="text-transform:uppercase;font-family:var(--f-mono)"></label>
+        <label class="field"><span id="passLab" data-i18n="password"></span><input id="aPass" type="password" autocomplete="current-password" required minlength="6"></label>
+        <label class="field" id="fInvite" hidden><span data-i18n="invite_code"></span><input id="aInvite" autocomplete="off"></label>
+        <button class="btn" type="submit" id="authBtn"></button>
+        <p class="status" id="authStatus"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- самбар -->
+  <div id="vDash" hidden>
+    <div class="sec-head">
+      <div><div class="eyebrow" data-i18n="t_classes"></div><h2 id="tName"></h2></div>
+      <div class="btns"><button class="btn ghost sm" type="button" id="accountOpen" data-i18n="account"></button><button class="btn ghost sm" type="button" id="logout" data-i18n="logout"></button></div>
+    </div>
+    <div class="tabs" id="classTabs"></div>
+    <form id="classForm" class="form" style="max-width:520px;margin-bottom:24px">
+      <label class="field"><span data-i18n="t_new_class"></span><input id="cName" data-i18n-ph="class_name" required></label>
+      <button class="btn ghost" type="submit" data-i18n="create"></button>
+    </form>
+
+    <div id="classView" hidden>
+      <div class="two">
+        <div class="panel stack">
+          <div class="eyebrow" data-i18n="t_share_code"></div>
+          <div class="codebox" id="cCode"></div>
+          <p class="small" id="cLink"></p>
+          <h3 style="font-size:18px;margin-top:6px" data-i18n="t_students"></h3>
+          <div class="list" id="sList"></div>
+          <h3 style="font-size:16px;margin-top:6px" data-i18n="co_teachers"></h3>
+          <div class="list" id="coList"></div>
+          <form id="coForm" class="form"><label class="field"><span data-i18n="co_email"></span><input id="coEmail" type="email" required></label><button class="btn ghost sm" type="submit" data-i18n="co_add"></button></form>
+          <p class="status" id="coStatus"></p>
+        </div>
+        <div class="panel">
+          <h3 style="font-size:18px;margin-bottom:12px" data-i18n="t_new_assign"></h3>
+          <form id="asForm" class="form">
+            <label class="field" style="grid-column:1/-1"><span data-i18n="title"></span><input id="asTitle" required></label>
+            <label class="field" style="grid-column:1/-1"><span data-i18n="mode"></span><select id="asMode"><option value="standard" data-i18n="mode_standard"></option><option value="adaptive" data-i18n="mode_adaptive"></option></select></label>
+            <p class="small" id="asModeHint" hidden style="grid-column:1/-1" data-i18n="adaptive_hint"></p>
+            <label class="field"><span data-i18n="lab_subject"></span><select id="asSubj"></select></label>
+            <label class="field"><span data-i18n="lab_topic"></span><select id="asDom"></select></label>
+            <label class="field" id="asDiffWrap"><span data-i18n="diff"></span><select id="asDiff"></select></label>
+            <label class="field"><span data-i18n="source"></span><select id="asSrc"><option value="all" data-i18n="src_all"></option><option value="builtin" data-i18n="src_builtin"></option><option value="mine" data-i18n="src_mine"></option></select></label>
+            <label class="field"><span data-i18n="q_count"></span><input id="asCount" type="number" min="1" value="6"></label>
+            <label class="field"><span data-i18n="time_limit"></span><input id="asTime" type="number" min="1" max="180" value="10"></label>
+            <label class="field" style="grid-column:1/-1"><span data-i18n="due_at"></span><input id="asDue" type="datetime-local"></label>
+            <button class="btn" type="submit" data-i18n="publish"></button>
+          </form>
+          <p class="status" id="asStatus" style="margin-top:10px"></p>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:20px">
+        <h3 style="font-size:18px;margin-bottom:12px" data-i18n="t_assigns"></h3>
+        <div class="list" id="asList"></div>
+      </div>
+
+      <div class="two" style="margin-top:20px">
+        <div class="panel">
+          <h3 style="font-size:18px" data-i18n="live_start"></h3>
+          <p class="small" style="margin:4px 0 12px" data-i18n="live_lead"></p>
+          <form id="lvForm" class="form">
+            <label class="field"><span data-i18n="lab_subject"></span><select id="lvSubj"></select></label>
+            <label class="field"><span data-i18n="lab_topic"></span><select id="lvDom"></select></label>
+            <label class="field"><span data-i18n="diff"></span><select id="lvDiff"></select></label>
+            <label class="field"><span data-i18n="q_count"></span><input id="lvCount" type="number" min="1" max="20" value="5"></label>
+            <button class="btn" type="submit" data-i18n="live_start"></button>
+          </form>
+          <p class="status" id="lvStatus"></p>
+        </div>
+        <div class="panel">
+          <h3 style="font-size:18px" data-i18n="rec_title"></h3>
+          <p class="small" style="margin:4px 0 12px" data-i18n="rec_lead"></p>
+          <form id="recForm" class="form">
+            <label class="field" style="grid-column:1/-1"><span data-i18n="title"></span><input id="recTitle" required></label>
+            <label class="field"><span data-i18n="lab_subject"></span><select id="recSubj"></select></label>
+            <label class="field"><span data-i18n="lab_topic"></span><select id="recDom"></select></label>
+            <label class="field"><span data-i18n="rec_weekday"></span><select id="recDay"></select></label>
+            <label class="field"><span data-i18n="rec_hour"></span><input id="recHour" type="number" min="0" max="23" value="8"></label>
+            <label class="field"><span data-i18n="q_count"></span><input id="recCount" type="number" min="1" max="40" value="8"></label>
+            <label class="field"><span data-i18n="time_limit"></span><input id="recTime" type="number" min="1" max="180" value="12"></label>
+            <label class="field"><span data-i18n="rec_open"></span><input id="recOpen" type="number" min="1" max="14" value="3"></label>
+            <button class="btn ghost" type="submit" data-i18n="rec_add"></button>
+          </form>
+          <p class="status" id="recStatus"></p>
+          <div class="list" id="recList" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:20px">
+        <div class="sec-head" style="margin-bottom:12px"><div><h3 style="font-size:18px" data-i18n="an_title"></h3><p class="small" data-i18n="an_lead"></p></div><span class="small mono" id="anMeta"></span></div>
+        <div id="anBody"></div>
+        <h4 style="margin:18px 0 8px;font-size:15px" data-i18n="board_title"></h4>
+        <div id="anPart"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:20px" id="qbPanel">
+      <div class="sec-head" style="margin-bottom:12px"><div><h3 style="font-size:18px" data-i18n="qb_title"></h3><p class="small" data-i18n="qb_lead"></p></div><span class="small" id="qbCounts"></span></div>
+      <details id="qbDetails">
+        <summary class="btn ghost sm" style="list-style:none;display:inline-flex" data-i18n="qb_add"></summary>
+        <form id="qbForm" class="form" style="margin-top:14px">
+          <label class="field"><span data-i18n="lab_subject"></span><select id="qbSubj"></select></label>
+          <label class="field"><span data-i18n="lab_topic"></span><select id="qbDom"></select></label>
+          <label class="field"><span data-i18n="diff"></span><select id="qbDiff"><option value="1" data-i18n="diff_1"></option><option value="2" selected data-i18n="diff_2"></option><option value="3" data-i18n="diff_3"></option></select></label>
+          <label class="field"><span data-i18n="qb_answer"></span><select id="qbAns"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select></label>
+          <label class="field" style="grid-column:1/-1"><span data-i18n="qb_passage"></span><input id="qbPass"></label>
+          <label class="field" style="grid-column:1/-1"><span data-i18n="qb_q_en"></span><input id="qbQen"></label>
+          <label class="field" style="grid-column:1/-1"><span data-i18n="qb_q_mn"></span><input id="qbQmn"></label>
+          <div class="field" style="grid-column:1/-1"><span data-i18n="qb_opts_en"></span>
+            <div class="form"><input id="qbOe0" placeholder="A" required><input id="qbOe1" placeholder="B" required><input id="qbOe2" placeholder="C" required><input id="qbOe3" placeholder="D" required></div></div>
+          <div class="field" style="grid-column:1/-1"><span data-i18n="qb_opts_mn"></span>
+            <div class="form"><input id="qbOm0" placeholder="A"><input id="qbOm1" placeholder="B"><input id="qbOm2" placeholder="C"><input id="qbOm3" placeholder="D"></div></div>
+          <label class="field" style="grid-column:1/-1"><span data-i18n="qb_e_en"></span><input id="qbEen"></label>
+          <label class="field" style="grid-column:1/-1"><span data-i18n="qb_e_mn"></span><input id="qbEmn"></label>
+          <button class="btn" type="submit" data-i18n="qb_add"></button>
+          <p class="status" id="qbStatus"></p>
+        </form>
+      </details>
+      <div class="list" id="qbList" style="margin-top:14px"></div>
+    </div>
+  </div>
+
+  <!-- дүн -->
+  <div id="vRes" hidden>
+    <div class="sec-head">
+      <div><div class="eyebrow" data-i18n="t_results_title"></div><h2 id="rTitle"></h2><p class="small" id="rMeta"></p></div>
+      <div class="btns">
+        <button class="btn ghost sm" type="button" id="rBack" data-i18n="back_list"></button>
+        <button class="btn ghost sm" type="button" id="rCsv" data-i18n="csv"></button>
+        <button class="btn ghost sm" type="button" id="rFollow" data-i18n="followup"></button>
+        <button class="btn sm" type="button" id="rProj" data-i18n="project"></button>
+      </div>
+    </div>
+    <p class="status" id="rFollowStatus"></p>
+    <div class="banner" id="rSummary"></div>
+    <div class="panel"><div id="rTable"></div><p class="small" style="margin-top:10px" data-i18n="auto_refresh"></p></div>
+    <div class="panel" style="margin-top:20px">
+      <h3 style="font-size:18px;margin-bottom:12px" data-i18n="q_analysis"></h3>
+      <div id="rQs"></div>
+    </div>
+  </div>
+</main>
+
+<!-- том дэлгэц / шууд асуулт -->
+<div class="proj" id="proj" hidden role="dialog"><div class="wrap" id="projBody"></div></div>
+<!-- цонхнууд -->
+<div class="modal" id="modal" hidden role="dialog"><div class="panel stack" id="modalBody"></div></div>
+
+<footer><div class="wrap" data-i18n="footer"></div></footer>
+<script src="/js/common.js"></script>
+<script src="/js/teacher.js"></script>
+</body>
+</html>

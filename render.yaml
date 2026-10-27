@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: onoo1600
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/meta
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: DATABASE_URL
+        sync: false
+      - key: TEACHER_INVITE_CODE
+        sync: false
